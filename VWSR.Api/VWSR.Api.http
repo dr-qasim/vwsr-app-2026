@@ -1,0 +1,6 @@
+@VWSR.Api_HostAddress = http://localhost:5120
+
+GET {{VWSR.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

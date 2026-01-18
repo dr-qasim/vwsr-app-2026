@@ -11,4 +11,5 @@ public static class Session
     public static string? AccessToken { get; set; }
     public static string? RefreshToken { get; set; }
     public static UserProfile? User { get; set; }
+    public static string? ApiBaseUrl { get; set; }
 }

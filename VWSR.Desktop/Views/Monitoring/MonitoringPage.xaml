@@ -1,0 +1,100 @@
+<Page x:Class="VWSR.Desktop.MonitoringPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d"
+      Background="{StaticResource PageBackground}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Монитор торговых автоматов" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+        <Border Grid.Row="1" Background="White" BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,0,12">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="Общее состояние" FontWeight="SemiBold" Margin="0,0,12,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                        <Ellipse Fill="#1FCB7A" Width="10" Height="10" Margin="0,0,6,0"/>
+                        <TextBlock Text="Работает"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                        <Ellipse Fill="#E74C3C" Width="10" Height="10" Margin="0,0,6,0"/>
+                        <TextBlock Text="Не работает"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Fill="#F1C40F" Width="10" Height="10" Margin="0,0,6,0"/>
+                        <TextBlock Text="Обслуживание"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <WrapPanel VerticalAlignment="Center">
+                    <TextBlock Text="Состояние" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="StatusBox" Width="160" Height="28" Margin="0,0,12,0">
+                        <ComboBoxItem Content="" IsSelected="True"/>
+                        <ComboBoxItem Content="Работает"/>
+                        <ComboBoxItem Content="Не работает"/>
+                        <ComboBoxItem Content="На обслуживании"/>
+                    </ComboBox>
+
+                    <TextBlock Text="Тип подключения ID" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBox x:Name="ConnectionTypeBox" Width="80" Height="28" Margin="0,0,12,0"/>
+
+                    <TextBlock Text="Доп. статус" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="AdditionalBox" Width="160" Height="28" Margin="0,0,12,0">
+                        <ComboBoxItem Content="" IsSelected="True"/>
+                        <ComboBoxItem Content="None"/>
+                        <ComboBoxItem Content="Door open"/>
+                        <ComboBoxItem Content="Temperature high"/>
+                        <ComboBoxItem Content="Payment error"/>
+                    </ComboBox>
+
+                    <Button Content="Применить" Height="28" Margin="0,0,6,0" Click="Apply_Click"/>
+                    <Button Content="Очистить" Height="28" Click="Clear_Click"/>
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="2" Background="White" BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="6" Padding="6">
+            <Grid>
+                <DataGrid x:Name="MonitoringGrid"
+                          AutoGenerateColumns="False"
+                          ItemsSource="{Binding Rows}"
+                          CanUserSortColumns="True"
+                          IsReadOnly="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="№" Binding="{Binding RowNumber}" Width="50"/>
+                        <DataGridTextColumn Header="ТП" Binding="{Binding Tp}" Width="140"/>
+                        <DataGridTextColumn Header="Связь" Binding="{Binding Connection}" Width="100"/>
+                        <DataGridTextColumn Header="Загрузка" Binding="{Binding Load}" Width="160"/>
+                        <DataGridTextColumn Header="Денежные средства" Binding="{Binding Cash}" Width="140"/>
+                        <DataGridTextColumn Header="События" Binding="{Binding Events}" Width="160"/>
+                        <DataGridTextColumn Header="Оборудование" Binding="{Binding Equipment}" Width="160">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="Green"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Информация" Binding="{Binding Info}" Width="140"/>
+                        <DataGridTextColumn Header="Доп." Binding="{Binding Additional}" Width="140"/>
+                        <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="120"/>
+                        <DataGridTextColumn Header="Баланс" Binding="{Binding AccountBalance}" Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <TextBlock x:Name="EmptyText" Text="Нет данных" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" FontSize="16" Foreground="Gray"/>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="3" Margin="0,15,0,0" Orientation="Vertical">
+            <TextBlock x:Name="TotalCountText" DockPanel.Dock="Left"/>
+            <TextBlock x:Name="TotalCashText" DockPanel.Dock="Right"/>
+        </StackPanel>
+    </Grid>
+</Page>

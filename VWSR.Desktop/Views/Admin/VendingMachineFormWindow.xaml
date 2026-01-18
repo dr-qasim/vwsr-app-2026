@@ -1,0 +1,133 @@
+<Window x:Class="VWSR.Desktop.VendingMachineFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Торговый автомат"
+        Height="700"
+        Width="720"
+        WindowStartupLocation="CenterScreen">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16">
+            <TextBlock Text="Создание торгового автомата" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+            <Border Background="White" BorderBrush="#E3E3E3" BorderThickness="1" CornerRadius="6" Padding="12">
+                <StackPanel>
+                    <UniformGrid Columns="2">
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Название"/>
+                            <TextBox x:Name="NameBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Модель ID"/>
+                            <TextBox x:Name="ModelIdBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Режим работы ID"/>
+                            <TextBox x:Name="WorkModeIdBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="TimeZone ID"/>
+                            <TextBox x:Name="TimeZoneIdBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Статус ID"/>
+                            <TextBox x:Name="StatusIdBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Приоритет ID"/>
+                            <TextBox x:Name="ServicePriorityIdBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Матрица ID"/>
+                            <TextBox x:Name="ProductMatrixIdBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Компания ID"/>
+                            <TextBox x:Name="CompanyIdBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Модем ID"/>
+                            <TextBox x:Name="ModemIdBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Адрес"/>
+                            <TextBox x:Name="AddressBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Место"/>
+                            <TextBox x:Name="PlaceBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Инв. номер"/>
+                            <TextBox x:Name="InventoryNumberBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Серийный номер"/>
+                            <TextBox x:Name="SerialNumberBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Дата изготовления"/>
+                            <TextBox x:Name="ManufactureDateBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Дата ввода"/>
+                            <TextBox x:Name="CommissioningDateBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Дата поверки"/>
+                            <TextBox x:Name="LastVerificationDateBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Интервал (мес)"/>
+                            <TextBox x:Name="VerificationIntervalBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Ресурс (ч)"/>
+                            <TextBox x:Name="ResourceHoursBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="След. сервис"/>
+                            <TextBox x:Name="NextServiceDateBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Длит. сервиса"/>
+                            <TextBox x:Name="ServiceDurationBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Инвентаризация"/>
+                            <TextBox x:Name="InventoryDateBox" Height="28"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="Страна ID"/>
+                            <TextBox x:Name="CountryIdBox" Height="28"/>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,0,12,12">
+                            <TextBlock Text="Поверку делал ID"/>
+                            <TextBox x:Name="LastVerificationUserBox" Height="28"/>
+                        </StackPanel>
+                    </UniformGrid>
+
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock Text="Примечание"/>
+                        <TextBox x:Name="NotesBox" Height="80" TextWrapping="Wrap" AcceptsReturn="True"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Сохранить" Width="110" Margin="0,0,8,0" Click="Save_Click"/>
+                        <Button Content="Отмена" Width="90" Click="Cancel_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

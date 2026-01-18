@@ -16,6 +16,8 @@ public partial class LoginWindow : Window
     {
         InitializeComponent();
         _httpClient.BaseAddress = new Uri("http://localhost:5000/");
+        // Сохраняем адрес API для остальных окон.
+        Session.ApiBaseUrl = _httpClient.BaseAddress.ToString();
     }
 
     private async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -59,8 +61,8 @@ public partial class LoginWindow : Window
 
             StatusText.Text = "Вы успешно вошли.";
 
-            DashboardWindow dashboard = new DashboardWindow();
-            dashboard.Show();
+            var shell = new ShellWindow();
+            shell.Show();
             Close();
         }
         catch (Exception ex)

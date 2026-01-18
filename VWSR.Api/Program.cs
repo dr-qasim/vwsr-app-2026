@@ -16,6 +16,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString);
 });
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+});
+
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<RefreshTokenStore>();
 builder.Services.AddSingleton<MonitoringStatusGenerator>();
@@ -168,7 +173,7 @@ vmGroup.MapGet("/", async (
             vm.ModemId ?? -1,
             vm.Address,
             vm.Place,
-            vm.CreatedAt))
+            vm.CommissioningDate.ToDateTime(TimeOnly.MinValue)))
         .ToListAsync();
 
     return Results.Ok(new PagedResult<VendingMachineListItem>(total, page, pageSize, items));
@@ -336,15 +341,136 @@ vmGroup.MapPost("/{id:int}/unlink-modem", async (int id, AppDbContext db) =>
     return Results.Ok(new { message = "Модем отвязан." });
 });
 
+var companiesGroup = app.MapGroup("/api/companies").RequireAuthorization();
+
+companiesGroup.MapGet("/", async (AppDbContext db, string? search) =>
+{
+    IQueryable<Company> query = db.Company.AsNoTracking();
+
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        query = query.Where(c => c.Name.Contains(search));
+    }
+
+    var items = await query
+        .OrderBy(c => c.Name)
+        .Select(c => new CompanyListItem(
+            c.CompanyId,
+            c.Name,
+            c.Phone,
+            c.Email,
+            c.Address))
+        .ToListAsync();
+
+    return Results.Ok(items);
+});
+
+companiesGroup.MapGet("/{id:int}", async (int id, AppDbContext db) =>
+{
+    var company = await db.Company.AsNoTracking().FirstOrDefaultAsync(c => c.CompanyId == id);
+    if (company is null)
+    {
+        return Results.NotFound();
+    }
+
+    return Results.Ok(new CompanyListItem(
+        company.CompanyId,
+        company.Name,
+        company.Phone,
+        company.Email,
+        company.Address));
+});
+
+companiesGroup.MapPost("/", async (CompanyRequest request, AppDbContext db) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Name))
+    {
+        return Results.BadRequest(new { message = "Название обязательно." });
+    }
+
+    if (await db.Company.AnyAsync(c => c.Name == request.Name))
+    {
+        return Results.Conflict(new { message = "Компания с таким названием уже существует." });
+    }
+
+    var company = new Company
+    {
+        Name = request.Name.Trim(),
+        Phone = request.Phone,
+        Email = request.Email,
+        Address = request.Address,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    db.Company.Add(company);
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/api/companies/{company.CompanyId}", new { id = company.CompanyId });
+});
+
+companiesGroup.MapPut("/{id:int}", async (int id, CompanyRequest request, AppDbContext db) =>
+{
+    var company = await db.Company.FirstOrDefaultAsync(c => c.CompanyId == id);
+    if (company is null)
+    {
+        return Results.NotFound();
+    }
+
+    if (await db.Company.AnyAsync(c => c.Name == request.Name && c.CompanyId != id))
+    {
+        return Results.Conflict(new { message = "Компания с таким названием уже существует." });
+    }
+
+    company.Name = request.Name.Trim();
+    company.Phone = request.Phone;
+    company.Email = request.Email;
+    company.Address = request.Address;
+
+    await db.SaveChangesAsync();
+    return Results.Ok();
+});
+
+companiesGroup.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
+{
+    var company = await db.Company.FirstOrDefaultAsync(c => c.CompanyId == id);
+    if (company is null)
+    {
+        return Results.NotFound();
+    }
+
+    var hasLinks = await db.VendingMachine.AnyAsync(vm => vm.CompanyId == id)
+                   || await db.UserAccount.AnyAsync(u => u.CompanyId == id);
+    if (hasLinks)
+    {
+        return Results.Conflict(new { message = "Нельзя удалить компанию с привязками." });
+    }
+
+    db.Company.Remove(company);
+    await db.SaveChangesAsync();
+
+    return Results.Ok();
+});
+
 var monitoringGroup = app.MapGroup("/api/monitoring").RequireAuthorization();
 
 monitoringGroup.MapGet("/machines", async (
     AppDbContext db,
     MonitoringStatusGenerator generator,
     string? status,
-    int? connectionTypeId,
+    string? connectionTypeId,
     string? additionalStatus) =>
 {
+    int? parsedConnectionTypeId = null;
+    if (!string.IsNullOrWhiteSpace(connectionTypeId))
+    {
+        if (!int.TryParse(connectionTypeId, out var parsed))
+        {
+            return Results.BadRequest(new { message = "Некорректный тип подключения." });
+        }
+
+        parsedConnectionTypeId = parsed;
+    }
+
     var machines = await db.VendingMachine
         .AsNoTracking()
         .Include(vm => vm.VendingMachineStatus)
@@ -369,7 +495,7 @@ monitoringGroup.MapGet("/machines", async (
             continue;
         }
 
-        if (connectionTypeId.HasValue && vm.Modem?.ConnectionTypeId != connectionTypeId.Value)
+        if (parsedConnectionTypeId.HasValue && vm.Modem?.ConnectionTypeId != parsedConnectionTypeId.Value)
         {
             continue;
         }

@@ -4,6 +4,33 @@
              xmlns:local="clr-namespace:VWSR.Desktop"
              StartupUri="Views/Login/LoginWindow.xaml">
     <Application.Resources>
-         
+        <SolidColorBrush x:Key="SidebarBackground" Color="#1E232A"/>
+        <SolidColorBrush x:Key="SidebarHover" Color="#2B313A"/>
+        <SolidColorBrush x:Key="TopbarBackground" Color="#11151A"/>
+        <SolidColorBrush x:Key="PageBackground" Color="#F5F6F8"/>
+
+        <Style x:Key="SidebarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource SidebarHover}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Application.Resources>
 </Application>

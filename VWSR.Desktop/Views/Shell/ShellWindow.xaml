@@ -92,6 +92,9 @@
                         <Button x:Name="MenuButtonModems" Style="{StaticResource SidebarButtonStyle}" Click="ShowPlaceholder_Click" Tag="Модемы">
                             <TextBlock Text="Модемы"/>
                         </Button>
+                        <Button x:Name="MenuButtonExtras" Style="{StaticResource SidebarButtonStyle}" Click="ShowPlaceholder_Click" Tag="Дополнительные">
+                            <TextBlock Text="Дополнительные"/>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </DockPanel>

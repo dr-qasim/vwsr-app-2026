@@ -19,7 +19,6 @@ public partial class VendingMachineFormWindow : Window
     {
         InitializeComponent();
         _detail = detail;
-        _httpClient.BaseAddress = new Uri(Session.ApiBaseUrl ?? "http://localhost:5000/");
 
         FillDefaults();
         if (_detail != null)
@@ -170,7 +169,7 @@ public partial class VendingMachineFormWindow : Window
 
     private async Task CreateMachine(VendingMachineCreateRequest request)
     {
-        using var http = new HttpRequestMessage(HttpMethod.Post, "api/vending-machines");
+        using var http = new HttpRequestMessage(HttpMethod.Post, Session.GetApiUrl("api/vending-machines"));
         ApplyAuth(http);
         http.Content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
 
@@ -209,7 +208,7 @@ public partial class VendingMachineFormWindow : Window
             request.LastVerificationUserAccountId,
             request.Notes);
 
-        using var http = new HttpRequestMessage(HttpMethod.Put, $"api/vending-machines/{id}");
+        using var http = new HttpRequestMessage(HttpMethod.Put, Session.GetApiUrl($"api/vending-machines/{id}"));
         ApplyAuth(http);
         http.Content = new StringContent(JsonSerializer.Serialize(update), Encoding.UTF8, "application/json");
 

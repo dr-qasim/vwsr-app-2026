@@ -22,7 +22,7 @@
             <StackPanel>
                 <WrapPanel VerticalAlignment="Center">
                     <TextBlock Text="Поиск" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                    <TextBox x:Name="SearchBox" Width="180" Height="28" Margin="0,0,12,0"/>
+                    <TextBox x:Name="SearchBox" Width="180" Height="28" Margin="0,0,12,0" KeyDown="SearchBox_KeyDown"/>
 
                     <TextBlock Text="Строк" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <ComboBox x:Name="PageSizeBox" Width="80" Height="28" SelectionChanged="PageSizeBox_SelectionChanged">

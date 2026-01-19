@@ -21,8 +21,6 @@ public partial class MonitoringPage : Page
     {
         InitializeComponent();
         DataContext = this;
-
-        _httpClient.BaseAddress = new Uri(Session.ApiBaseUrl ?? "http://localhost:5000/");
     }
 
     private async void Apply_Click(object sender, RoutedEventArgs e)
@@ -47,9 +45,9 @@ public partial class MonitoringPage : Page
             var additional = GetComboValue(AdditionalBox);
             var connectionType = ConnectionTypeBox.Text?.Trim();
 
-            var url = $"api/monitoring/machines?status={Uri.EscapeDataString(status ?? string.Empty)}" +
+            var url = Session.GetApiUrl($"api/monitoring/machines?status={Uri.EscapeDataString(status ?? string.Empty)}" +
                       $"&connectionTypeId={Uri.EscapeDataString(connectionType ?? string.Empty)}" +
-                      $"&additionalStatus={Uri.EscapeDataString(additional ?? string.Empty)}";
+                      $"&additionalStatus={Uri.EscapeDataString(additional ?? string.Empty)}");
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             ApplyAuth(request);

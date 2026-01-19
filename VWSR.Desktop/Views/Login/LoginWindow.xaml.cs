@@ -15,9 +15,8 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
-        _httpClient.BaseAddress = new Uri("http://localhost:5000/");
         // Сохраняем адрес API для остальных окон.
-        Session.ApiBaseUrl = _httpClient.BaseAddress.ToString();
+        Session.ApiBaseUrl = Session.GetApiBaseUri().ToString();
     }
 
     private async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -40,7 +39,7 @@ public partial class LoginWindow : Window
             var json = JsonSerializer.Serialize(payload);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("api/auth/login", content);
+            var response = await _httpClient.PostAsync(Session.GetApiUrl("api/auth/login"), content);
             if (!response.IsSuccessStatusCode)
             {
                 StatusText.Text = "Ошибка входа.";

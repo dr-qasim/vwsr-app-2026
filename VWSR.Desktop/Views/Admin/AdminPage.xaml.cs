@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using Microsoft.Win32;
 
 namespace VWSR.Desktop;
@@ -28,8 +29,6 @@ public partial class AdminPage : Page
         InitializeComponent();
         DataContext = this;
 
-        _httpClient.BaseAddress = new Uri(Session.ApiBaseUrl ?? "http://localhost:5000/");
-
         Loaded += async (_, _) => await LoadMachines();
     }
 
@@ -39,7 +38,7 @@ public partial class AdminPage : Page
         {
             // Загружаем список ТА через API с пагинацией и фильтром.
             var search = SearchBox.Text?.Trim();
-            var url = $"api/vending-machines?search={Uri.EscapeDataString(search ?? string.Empty)}&page={_page}&pageSize={_pageSize}";
+            var url = Session.GetApiUrl($"api/vending-machines?search={Uri.EscapeDataString(search ?? string.Empty)}&page={_page}&pageSize={_pageSize}");
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             ApplyAuth(request);
@@ -118,6 +117,18 @@ public partial class AdminPage : Page
 
     private void Refresh_Click(object sender, RoutedEventArgs e)
     {
+        _page = 1;
+        _ = LoadMachines();
+    }
+
+    private void SearchBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter)
+        {
+            return;
+        }
+
+        // Быстрый поиск по Enter, без отдельной кнопки.
         _page = 1;
         _ = LoadMachines();
     }
@@ -210,7 +221,7 @@ public partial class AdminPage : Page
             return;
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Delete, $"api/vending-machines/{row.Id}");
+        using var request = new HttpRequestMessage(HttpMethod.Delete, Session.GetApiUrl($"api/vending-machines/{row.Id}"));
         ApplyAuth(request);
         var response = await _httpClient.SendAsync(request);
 
@@ -235,7 +246,7 @@ public partial class AdminPage : Page
             return;
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"api/vending-machines/{row.Id}/unlink-modem");
+        using var request = new HttpRequestMessage(HttpMethod.Post, Session.GetApiUrl($"api/vending-machines/{row.Id}/unlink-modem"));
         ApplyAuth(request);
         var response = await _httpClient.SendAsync(request);
 
@@ -245,6 +256,8 @@ public partial class AdminPage : Page
             return;
         }
 
+        // Сообщаем пользователю об успешной отвязке.
+        MessageBox.Show("Модем отвязан.");
         await LoadMachines();
     }
 
@@ -255,7 +268,7 @@ public partial class AdminPage : Page
 
     private async Task<VendingMachineDetail?> LoadDetail(int id)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"api/vending-machines/{id}");
+        using var request = new HttpRequestMessage(HttpMethod.Get, Session.GetApiUrl($"api/vending-machines/{id}"));
         ApplyAuth(request);
         var response = await _httpClient.SendAsync(request);
 

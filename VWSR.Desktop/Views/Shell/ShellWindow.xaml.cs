@@ -62,6 +62,7 @@ public partial class ShellWindow : Window
         MenuButtonCompanies.Visibility = visibility;
         MenuButtonUsers.Visibility = visibility;
         MenuButtonModems.Visibility = visibility;
+        MenuButtonExtras.Visibility = visibility;
     }
 
     private void ProfileButton_Click(object sender, RoutedEventArgs e)

@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -8,6 +12,8 @@ namespace VWSR.Desktop;
 
 public partial class DashboardPage : Page
 {
+    private readonly HttpClient _httpClient = new();
+    private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
     private readonly List<SalesPoint> _salesPoints = new();
     public DashboardTile EfficiencyTile { get; private set; } = new();
     public DashboardTile NetworkTile { get; private set; } = new();
@@ -18,36 +24,37 @@ public partial class DashboardPage : Page
     public DashboardPage()
     {
         InitializeComponent();
-        SeedDashboard();
+        InitDashboard();
         DataContext = this;
+        _ = LoadDashboard();
     }
 
-    private void SeedDashboard()
+    private void InitDashboard()
     {
         EfficiencyTile = new DashboardTile
         {
             Key = "Efficiency",
             Title = "Эффективность сети",
-            EfficiencyPercent = 78
+            EfficiencyPercent = 0
         };
 
         NetworkTile = new DashboardTile
         {
             Key = "Network",
             Title = "Состояние сети",
-            WorkingCount = 120,
-            OfflineCount = 12,
-            ServiceCount = 8,
-            SelectedStatusText = "Выберите статус"
+            WorkingCount = 0,
+            OfflineCount = 0,
+            ServiceCount = 0,
+            SelectedStatusText = string.Empty
         };
 
         SummaryTile = new DashboardTile
         {
             Key = "Summary",
             Title = "Сводка",
-            SalesTotal = 125000,
-            CashTotal = 43200,
-            MaintenanceTotal = 9
+            SalesTotal = 0,
+            CashTotal = 0,
+            MaintenanceTotal = 0
         };
 
         SalesTile = new DashboardTile
@@ -61,36 +68,94 @@ public partial class DashboardPage : Page
             Key = "News",
             Title = "Новости"
         };
-
-        NewsTile.NewsItems.Add("Обновлен регламент обслуживания.");
-        NewsTile.NewsItems.Add("Запущены новые точки в бизнес-центре.");
-        NewsTile.NewsItems.Add("Плановые проверки на этой неделе.");
-
-        SeedSales();
-        UpdateSalesChart(SalesTile, "sum");
     }
 
-    private void SeedSales()
+    private async Task LoadDashboard()
     {
-        _salesPoints.Clear();
-        var now = DateTime.Today;
-        var rand = new Random(5);
-
-        for (var i = 9; i >= 0; i--)
+        try
         {
-            var day = now.AddDays(-i);
-            _salesPoints.Add(new SalesPoint
+            if (string.IsNullOrWhiteSpace(Session.AccessToken))
             {
-                Day = day.ToString("dd.MM"),
-                Sum = rand.Next(8000, 22000),
-                Count = rand.Next(40, 120)
-            });
+                return;
+            }
+
+            // Запрос на API одной ручкой, чтобы не плодить много запросов.
+            var url = Session.GetApiUrl("api/dashboard");
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            ApplyAuth(request);
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            var data = JsonSerializer.Deserialize<DashboardResponse>(body, _jsonOptions);
+            if (data == null)
+            {
+                return;
+            }
+
+            ApplyDashboardData(data);
         }
+        catch
+        {
+            // Если API недоступно, остаемся на нулевых данных.
+        }
+    }
+
+    private void ApplyDashboardData(DashboardResponse data)
+    {
+        // Обновляем блоки главной страницы реальными данными.
+        EfficiencyTile.EfficiencyPercent = data.EfficiencyPercent;
+        NetworkTile.WorkingCount = data.WorkingCount;
+        NetworkTile.OfflineCount = data.OfflineCount;
+        NetworkTile.ServiceCount = data.ServiceCount;
+        NetworkTile.SelectedStatusText = string.Empty;
+
+        SummaryTile.SalesTotal = data.SalesTotal;
+        SummaryTile.CashTotal = data.CashTotal;
+        SummaryTile.MaintenanceTotal = data.MaintenanceTotal;
+
+        _salesPoints.Clear();
+        if (data.SalesPoints != null)
+        {
+            foreach (var point in data.SalesPoints)
+            {
+                _salesPoints.Add(new SalesPoint
+                {
+                    Day = point.Day,
+                    Sum = point.Sum,
+                    Count = point.Count
+                });
+            }
+        }
+
+        NewsTile.NewsItems.Clear();
+        if (data.News != null)
+        {
+            foreach (var item in data.News)
+            {
+                NewsTile.NewsItems.Add(item);
+            }
+        }
+
+        UpdateSalesChart(SalesTile, "sum");
+
+        // Простейшее обновление биндингов без сложного MVVM.
+        DataContext = null;
+        DataContext = this;
     }
 
     private void UpdateSalesChart(DashboardTile tile, string mode)
     {
         tile.ChartItems.Clear();
+
+        if (_salesPoints.Count == 0)
+        {
+            return;
+        }
 
         var max = mode == "sum"
             ? _salesPoints.Max(p => p.Sum)
@@ -99,13 +164,14 @@ public partial class DashboardPage : Page
         foreach (var point in _salesPoints)
         {
             var value = mode == "sum" ? point.Sum : point.Count;
-            var height = max == 0 ? 10 : 120.0 * value / max;
+            var maxValue = mode == "sum" ? (decimal)max : max;
+            var height = maxValue == 0 ? 10 : 120.0 * (double)value / (double)maxValue;
 
             tile.ChartItems.Add(new ChartItem
             {
                 Day = point.Day,
                 BarHeight = height,
-                ValueText = value.ToString()
+                ValueText = mode == "sum" ? value.ToString("N0") : value.ToString()
             });
         }
     }
@@ -142,10 +208,19 @@ public partial class DashboardPage : Page
         }
     }
 
+    private void ApplyAuth(HttpRequestMessage request)
+    {
+        // Токен нужен, так как API защищен.
+        if (!string.IsNullOrWhiteSpace(Session.AccessToken))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Session.AccessToken);
+        }
+    }
+
     private sealed class SalesPoint
     {
         public string Day { get; init; } = string.Empty;
-        public int Sum { get; init; }
+        public decimal Sum { get; init; }
         public int Count { get; init; }
     }
 }

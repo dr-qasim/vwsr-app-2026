@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -21,6 +22,12 @@ public partial class MonitoringPage : Page
     {
         InitializeComponent();
         DataContext = this;
+    }
+
+    private async void Page_Loaded(object sender, RoutedEventArgs e)
+    {
+        // При открытии страницы сразу подгружаем данные мониторинга.
+        await LoadMonitoring();
     }
 
     private async void Apply_Click(object sender, RoutedEventArgs e)
@@ -61,6 +68,7 @@ public partial class MonitoringPage : Page
 
             var body = await response.Content.ReadAsStringAsync();
             var items = JsonSerializer.Deserialize<MonitoringMachineItem[]>(body, _jsonOptions) ?? Array.Empty<MonitoringMachineItem>();
+            items = ApplySorting(items);
 
             Rows.Clear();
             var index = 1;
@@ -110,5 +118,50 @@ public partial class MonitoringPage : Page
     private static string? GetComboValue(ComboBox combo)
     {
         return (combo.SelectedItem as ComboBoxItem)?.Content?.ToString();
+    }
+
+    private MonitoringMachineItem[] ApplySorting(MonitoringMachineItem[] items)
+    {
+        var sortValue = GetComboValue(SortBox);
+        if (string.IsNullOrWhiteSpace(sortValue))
+        {
+            return items;
+        }
+
+        if (string.Equals(sortValue, "По времени", StringComparison.OrdinalIgnoreCase))
+        {
+            return items
+                .OrderByDescending(i => ParseSystemTime(i.SystemTime))
+                .ToArray();
+        }
+
+        if (string.Equals(sortValue, "По состоянию ТА", StringComparison.OrdinalIgnoreCase))
+        {
+            // Простейшая сортировка по статусу (аварии вверх).
+            return items
+                .OrderBy(i => GetStatusOrder(i.Status))
+                .ThenBy(i => i.Name)
+                .ToArray();
+        }
+
+        return items;
+    }
+
+    private static DateTime ParseSystemTime(string value)
+    {
+        return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsed)
+            ? parsed
+            : DateTime.MinValue;
+    }
+
+    private static int GetStatusOrder(string status)
+    {
+        return status switch
+        {
+            "Не работает" => 0,
+            "На обслуживании" => 1,
+            "Работает" => 2,
+            _ => 3
+        };
     }
 }

@@ -341,6 +341,105 @@ vmGroup.MapPost("/{id:int}/unlink-modem", async (int id, AppDbContext db) =>
     return Results.Ok(new { message = "Модем отвязан." });
 });
 
+var dashboardGroup = app.MapGroup("/api/dashboard").RequireAuthorization();
+
+dashboardGroup.MapGet("/", async (AppDbContext db) =>
+{
+    // Простая агрегация данных для главной страницы.
+    var totalMachines = await db.VendingMachine.AsNoTracking().CountAsync();
+
+    var workingCount = await db.VendingMachine
+        .AsNoTracking()
+        .Include(vm => vm.VendingMachineStatus)
+        .CountAsync(vm => EF.Functions.Like(vm.VendingMachineStatus.Name, "%Работает%"));
+
+    var offlineCount = await db.VendingMachine
+        .AsNoTracking()
+        .Include(vm => vm.VendingMachineStatus)
+        .CountAsync(vm =>
+            EF.Functions.Like(vm.VendingMachineStatus.Name, "%Вышел%") ||
+            EF.Functions.Like(vm.VendingMachineStatus.Name, "%Не работает%"));
+
+    var serviceCount = await db.VendingMachine
+        .AsNoTracking()
+        .Include(vm => vm.VendingMachineStatus)
+        .CountAsync(vm =>
+            EF.Functions.Like(vm.VendingMachineStatus.Name, "%ремонт%") ||
+            EF.Functions.Like(vm.VendingMachineStatus.Name, "%обслуж%"));
+
+    var efficiency = totalMachines == 0
+        ? 0
+        : (int)Math.Round(workingCount * 100m / totalMachines);
+
+    var salesTotal = await db.Sale
+        .AsNoTracking()
+        .SumAsync(s => (decimal?)s.TotalAmount) ?? 0m;
+
+    var cashTotal = await db.VendingMachineIncome
+        .AsNoTracking()
+        .SumAsync(i => (decimal?)i.TotalIncome) ?? 0m;
+
+    var maintenanceTotal = await db.Maintenance
+        .AsNoTracking()
+        .CountAsync();
+
+    // График продаж за 10 дней.
+    var startDate = DateTime.Today.AddDays(-9);
+    var salesByDay = await db.Sale
+        .AsNoTracking()
+        .Where(s => s.SoldAt >= startDate)
+        .GroupBy(s => s.SoldAt.Date)
+        .Select(g => new
+        {
+            Day = g.Key,
+            Sum = g.Sum(x => x.TotalAmount),
+            Count = g.Sum(x => x.Quantity)
+        })
+        .ToListAsync();
+
+
+    var salesPoints = new List<DashboardSalesPoint>();
+    for (var i = 0; i < 10; i++)
+    {
+        var day = startDate.Date.AddDays(i);
+        var item = salesByDay.FirstOrDefault(x => x.Day == day);
+        salesPoints.Add(new DashboardSalesPoint(
+            day.ToString("dd.MM"),
+            item?.Sum ?? 0m,
+            item?.Count ?? 0));
+    }
+
+    // Новости берем из последних событий, если их нет - даем заглушки.
+    var news = await db.VendingMachineEvent
+        .AsNoTracking()
+        .OrderByDescending(e => e.OccurredAt)
+        .Select(e => e.Message)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .Take(3)
+        .ToListAsync();
+
+    if (news.Count == 0)
+    {
+        news =
+        [
+            "Обновлен регламент обслуживания.",
+            "Запущены новые точки в бизнес-центре.",
+            "Плановые проверки на этой неделе."
+        ];
+    }
+
+    return Results.Ok(new DashboardResponse(
+        efficiency,
+        workingCount,
+        offlineCount,
+        serviceCount,
+        salesTotal,
+        cashTotal,
+        maintenanceTotal,
+        salesPoints,
+        news));
+});
+
 var companiesGroup = app.MapGroup("/api/companies").RequireAuthorization();
 
 companiesGroup.MapGet("/", async (AppDbContext db, string? search) =>
@@ -523,6 +622,7 @@ monitoringGroup.MapGet("/machines", async (
             vm.VendingMachineId,
             vm.Name,
             vm.Modem?.Provider?.Name ?? "-",
+            vm.VendingMachineStatus.Name,
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             income,
             generated.ConnectionState,

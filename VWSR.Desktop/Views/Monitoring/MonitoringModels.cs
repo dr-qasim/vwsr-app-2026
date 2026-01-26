@@ -4,6 +4,7 @@ public sealed record MonitoringMachineItem(
     int Id,
     string Name,
     string Provider,
+    string Status,
     string SystemTime,
     decimal AccountBalance,
     string ConnectionState,

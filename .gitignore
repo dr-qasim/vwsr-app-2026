@@ -22,3 +22,6 @@ packages/
 # OS
 Thumbs.db
 Desktop.ini
+
+# Tasks (project inputs)
+Tasks/

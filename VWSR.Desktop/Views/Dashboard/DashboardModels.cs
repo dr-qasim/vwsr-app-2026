@@ -50,3 +50,18 @@ public sealed class ChartItem
     public double BarHeight { get; init; }
     public string ValueText { get; init; } = string.Empty;
 }
+
+// Модели для API главной страницы.
+public sealed record DashboardSalesPoint(string Day, decimal Sum, int Count);
+
+public sealed record DashboardResponse(
+    int EfficiencyPercent,
+    int WorkingCount,
+    int OfflineCount,
+    int ServiceCount,
+    decimal SalesTotal,
+    decimal CashTotal,
+    int MaintenanceTotal,
+    DashboardSalesPoint[] SalesPoints,
+    string[] News
+);

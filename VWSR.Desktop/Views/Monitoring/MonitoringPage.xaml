@@ -4,6 +4,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
       mc:Ignorable="d"
+      Loaded="Page_Loaded"
       Background="{StaticResource PageBackground}">
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -33,6 +34,42 @@
                     </StackPanel>
                 </StackPanel>
 
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="Подключение" FontWeight="SemiBold" Margin="0,0,12,0"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Background="#F2F2F2" CornerRadius="4" Padding="4" Margin="0,0,6,0">
+                            <Image Source="/VWSR.Desktop;component/Assets/Icons/wifi.png" Width="16" Height="16"/>
+                        </Border>
+                        <Border Background="#F2F2F2" CornerRadius="4" Padding="4" Margin="0,0,6,0">
+                            <Image Source="/VWSR.Desktop;component/Assets/Icons/signal.png" Width="16" Height="16"/>
+                        </Border>
+                        <Border Background="#F2F2F2" CornerRadius="4" Padding="4" Margin="0,0,6,0">
+                            <Image Source="/VWSR.Desktop;component/Assets/Icons/plug.png" Width="16" Height="16"/>
+                        </Border>
+                        <Border Background="#F2F2F2" CornerRadius="4" Padding="4">
+                            <Image Source="/VWSR.Desktop;component/Assets/Icons/usb.png" Width="16" Height="16"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="Дополнительные статусы" FontWeight="SemiBold" Margin="0,0,12,0"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Background="#F2F2F2" CornerRadius="4" Padding="4" Margin="0,0,6,0">
+                            <Image Source="/VWSR.Desktop;component/Assets/Icons/exclamation-circle.png" Width="16" Height="16"/>
+                        </Border>
+                        <Border Background="#F2F2F2" CornerRadius="4" Padding="4" Margin="0,0,6,0">
+                            <Image Source="/VWSR.Desktop;component/Assets/Icons/exclamation-triangle.png" Width="16" Height="16"/>
+                        </Border>
+                        <Border Background="#F2F2F2" CornerRadius="4" Padding="4" Margin="0,0,6,0">
+                            <Image Source="/VWSR.Desktop;component/Assets/Icons/thermometer-full.png" Width="16" Height="16"/>
+                        </Border>
+                        <Border Background="#F2F2F2" CornerRadius="4" Padding="4">
+                            <Image Source="/VWSR.Desktop;component/Assets/Icons/unlock.png" Width="16" Height="16"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
                 <WrapPanel VerticalAlignment="Center">
                     <TextBlock Text="Состояние" VerticalAlignment="Center" Margin="0,0,6,0"/>
                     <ComboBox x:Name="StatusBox" Width="160" Height="28" Margin="0,0,12,0">
@@ -54,6 +91,12 @@
                         <ComboBoxItem Content="Payment error"/>
                     </ComboBox>
 
+                    <TextBlock Text="Сортировка" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <ComboBox x:Name="SortBox" Width="180" Height="28" Margin="0,0,12,0">
+                        <ComboBoxItem Content="По состоянию ТА" IsSelected="True"/>
+                        <ComboBoxItem Content="По времени"/>
+                    </ComboBox>
+
                     <Button Content="Применить" Height="28" Margin="0,0,6,0" Click="Apply_Click"/>
                     <Button Content="Очистить" Height="28" Click="Clear_Click"/>
                 </WrapPanel>
@@ -70,19 +113,98 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="№" Binding="{Binding RowNumber}" Width="50"/>
                         <DataGridTextColumn Header="ТП" Binding="{Binding Tp}" Width="140"/>
-                        <DataGridTextColumn Header="Связь" Binding="{Binding Connection}" Width="100"/>
-                        <DataGridTextColumn Header="Загрузка" Binding="{Binding Load}" Width="160"/>
-                        <DataGridTextColumn Header="Денежные средства" Binding="{Binding Cash}" Width="140"/>
-                        <DataGridTextColumn Header="События" Binding="{Binding Events}" Width="160"/>
-                        <DataGridTextColumn Header="Оборудование" Binding="{Binding Equipment}" Width="160">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="Green"/>
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn Header="Информация" Binding="{Binding Info}" Width="140"/>
-                        <DataGridTextColumn Header="Доп." Binding="{Binding Additional}" Width="140"/>
+
+                        <DataGridTemplateColumn Header="Связь" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Ellipse Width="8" Height="8" Margin="0,0,6,0">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="#1FCB7A"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Connection}" Value="Offline">
+                                                            <Setter Property="Fill" Value="#E74C3C"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Connection}" Value="Weak">
+                                                            <Setter Property="Fill" Value="#F1C40F"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock Text="{Binding Connection}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="Загрузка" Width="180">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Source="/VWSR.Desktop;component/Assets/Icons/reports.png" Width="14" Height="14" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Load}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="Денежные средства" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Source="/VWSR.Desktop;component/Assets/Icons/dollar.png" Width="14" Height="14" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Cash}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="События" Width="160">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Source="/VWSR.Desktop;component/Assets/Icons/bell.png" Width="14" Height="14" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Events}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="Оборудование" Width="160">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Source="/VWSR.Desktop;component/Assets/Icons/admin.png" Width="14" Height="14" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Equipment}" Foreground="Green" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="Информация" Width="140">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Source="/VWSR.Desktop;component/Assets/Icons/info-circle.png" Width="14" Height="14" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Info}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Header="Доп." Width="140">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Source="/VWSR.Desktop;component/Assets/Icons/exclamation-circle.png" Width="14" Height="14" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Additional}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
                         <DataGridTextColumn Header="Время" Binding="{Binding Time}" Width="120"/>
                         <DataGridTextColumn Header="Баланс" Binding="{Binding AccountBalance}" Width="100"/>
                     </DataGrid.Columns>
@@ -93,8 +215,8 @@
         </Border>
 
         <StackPanel Grid.Row="3" Margin="0,15,0,0" Orientation="Vertical">
-            <TextBlock x:Name="TotalCountText" DockPanel.Dock="Left"/>
-            <TextBlock x:Name="TotalCashText" DockPanel.Dock="Right"/>
+            <TextBlock x:Name="TotalCountText"/>
+            <TextBlock x:Name="TotalCashText"/>
         </StackPanel>
     </Grid>
 </Page>

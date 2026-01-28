@@ -1,0 +1,85 @@
+@page
+@model VWSR.Web.Pages.CalendarModel
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<VWSR.Web.SharedResource> L
+@{
+    ViewData["Title"] = L["MenuCalendar"];
+}
+
+<h1 class="mb-3">@L["CalendarTitle"]</h1>
+
+<form method="get" class="mb-3">
+    <label class="me-2">Фильтр:</label>
+    <select name="type" class="form-select d-inline-block w-auto me-2">
+        <option value="">Все</option>
+        <option value="plan" selected="@(Model.Filter == "plan")">Плановое ТО</option>
+        <option value="soon" selected="@(Model.Filter == "soon")">Срок &lt; 5 дней</option>
+        <option value="overdue" selected="@(Model.Filter == "overdue")">Просрочено</option>
+    </select>
+    <button class="btn btn-sm btn-primary" type="submit">Применить</button>
+</form>
+
+<ul class="nav nav-tabs">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#week">Неделя</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#month">Месяц</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#year">Год</button>
+    </li>
+</ul>
+
+<div class="tab-content border border-top-0 p-3">
+    <div class="tab-pane fade show active" id="week">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>ТА</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr class="@item.CssClass" title="@item.Tooltip">
+                    <td>@item.Date.ToString("dd.MM.yyyy")</td>
+                    <td>@item.MachineName</td>
+                    <td>@item.StatusText</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="tab-pane fade" id="month">
+        <p class="text-muted">Упрощённый вид на месяц (для новичка).</p>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Событие</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr class="@item.CssClass" title="@item.Tooltip">
+                    <td>@item.Date.ToString("dd.MM")</td>
+                    <td>@item.MachineName</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="tab-pane fade" id="year">
+        <p class="text-muted">Сводный список по году (минимальная реализация).</p>
+        <ul>
+        @foreach (var item in Model.Items)
+        {
+            <li class="@item.CssClass" title="@item.Tooltip">@item.Date: @item.MachineName (@item.StatusText)</li>
+        }
+        </ul>
+    </div>
+</div>

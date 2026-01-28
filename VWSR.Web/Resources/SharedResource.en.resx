@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Franchisee Web Cabinet</value>
+  </data>
+  <data name="MenuMachines" xml:space="preserve">
+    <value>Vending Machines</value>
+  </data>
+  <data name="MenuCalendar" xml:space="preserve">
+    <value>Maintenance calendar</value>
+  </data>
+  <data name="MenuSchedule" xml:space="preserve">
+    <value>Work Schedule</value>
+  </data>
+  <data name="UploadTitle" xml:space="preserve">
+    <value>Import vending machines</value>
+  </data>
+  <data name="UploadButton" xml:space="preserve">
+    <value>Upload file</value>
+  </data>
+  <data name="UploadHint" xml:space="preserve">
+    <value>CSV or XLSX format. Minimum 6 required fields.</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="ResultsTitle" xml:space="preserve">
+    <value>Upload results</value>
+  </data>
+  <data name="CalendarTitle" xml:space="preserve">
+    <value>Maintenance calendar</value>
+  </data>
+  <data name="ScheduleTitle" xml:space="preserve">
+    <value>Work schedule</value>
+  </data>
+</root>

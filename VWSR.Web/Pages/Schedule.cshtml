@@ -1,0 +1,53 @@
+@page
+@model VWSR.Web.Pages.ScheduleModel
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<VWSR.Web.SharedResource> L
+@{
+    ViewData["Title"] = L["MenuSchedule"];
+}
+
+<h1 class="mb-3">@L["ScheduleTitle"]</h1>
+
+<p class="text-muted">Минимальный календарь задач для новичка (дневной и недельный просмотр).</p>
+
+<h5>Дневной просмотр</h5>
+<table class="table table-sm table-bordered">
+    <thead>
+        <tr>
+            <th>Время</th>
+            <th>Сотрудник</th>
+            <th>Задача</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.DayItems)
+    {
+        <tr>
+            <td>@item.Time</td>
+            <td>@item.Employee</td>
+            <td>@item.Task</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<h5 class="mt-4">Недельный просмотр</h5>
+<table class="table table-sm table-bordered">
+    <thead>
+        <tr>
+            <th>День</th>
+            <th>Сотрудник</th>
+            <th>Задача</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.WeekItems)
+    {
+        <tr>
+            <td>@item.Day</td>
+            <td>@item.Employee</td>
+            <td>@item.Task</td>
+        </tr>
+    }
+    </tbody>
+</table>

@@ -208,6 +208,33 @@ public partial class DashboardPage : Page
         }
     }
 
+    private void HideTile_Click(object sender, RoutedEventArgs e)
+    {
+        // Скрываем плитку по имени (требование из критериев).
+        if (sender is FrameworkElement element && element.Tag is string name)
+        {
+            if (FindName(name) is UIElement tile)
+            {
+                tile.Visibility = Visibility.Collapsed;
+            }
+        }
+    }
+
+    private void ShowAllTiles_Click(object sender, RoutedEventArgs e)
+    {
+        // Быстро показываем все плитки обратно.
+        ShowTile(EfficiencyTileBorder);
+        ShowTile(NetworkTileBorder);
+        ShowTile(SummaryTileBorder);
+        ShowTile(SalesTileBorder);
+        ShowTile(NewsTileBorder);
+    }
+
+    private static void ShowTile(UIElement tile)
+    {
+        tile.Visibility = Visibility.Visible;
+    }
+
     private void ApplyAuth(HttpRequestMessage request)
     {
         // Токен нужен, так как API защищен.

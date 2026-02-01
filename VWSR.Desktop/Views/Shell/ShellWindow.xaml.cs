@@ -9,6 +9,7 @@ namespace VWSR.Desktop;
 public partial class ShellWindow : Window
 {
     private bool _sidebarCollapsed;
+    private bool _adminCollapsed;
 
     public ShellWindow()
     {
@@ -59,10 +60,19 @@ public partial class ShellWindow : Window
         MenuTextInventory.Visibility = visibility;
         MenuTextAdmin.Visibility = visibility;
         AdminHeader.Visibility = visibility;
+        AdminToggleIcon.Visibility = visibility;
         MenuButtonCompanies.Visibility = visibility;
         MenuButtonUsers.Visibility = visibility;
         MenuButtonModems.Visibility = visibility;
         MenuButtonExtras.Visibility = visibility;
+    }
+
+    private void ToggleAdminMenu_Click(object sender, RoutedEventArgs e)
+    {
+        // Скрываем/показываем вложенные пункты администрирования.
+        _adminCollapsed = !_adminCollapsed;
+        AdminSection.Visibility = _adminCollapsed ? Visibility.Collapsed : Visibility.Visible;
+        AdminToggleIcon.Text = _adminCollapsed ? "▸" : "▾";
     }
 
     private void ProfileButton_Click(object sender, RoutedEventArgs e)

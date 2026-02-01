@@ -71,29 +71,69 @@
                         </StackPanel>
                     </Button>
 
-                    <TextBlock x:Name="AdminHeader" Text="Администрирование" Foreground="#9AA4B2" FontSize="12" Margin="4,16,0,8"/>
+                    <Button x:Name="AdminToggleButton" Style="{StaticResource SidebarButtonStyle}" Click="ToggleAdminMenu_Click" Margin="0,16,0,8">
+                        <DockPanel LastChildFill="False">
+                            <TextBlock x:Name="AdminToggleIcon" Text="▾" Foreground="White" DockPanel.Dock="Right" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Rectangle Width="18" Height="18" Fill="White" VerticalAlignment="Center">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/VWSR.Desktop;component/Assets/Icons/admin.png" Stretch="Uniform"/>
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                                <TextBlock x:Name="AdminHeader" Text="Администрирование" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Button>
                     <StackPanel x:Name="AdminSection">
                         <Button Style="{StaticResource SidebarButtonStyle}" Click="OpenAdmin_Click">
                             <StackPanel Orientation="Horizontal">
                                 <Rectangle Width="18" Height="18" Fill="White">
                                     <Rectangle.OpacityMask>
-                                        <ImageBrush ImageSource="/VWSR.Desktop;component/Assets/Icons/admin.png" Stretch="Uniform"/>
+                                        <ImageBrush ImageSource="/VWSR.Desktop;component/Assets/Icons/inventory.png" Stretch="Uniform"/>
                                     </Rectangle.OpacityMask>
                                 </Rectangle>
                                 <TextBlock x:Name="MenuTextAdmin" Text="Торговые автоматы" Margin="10,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
                         <Button x:Name="MenuButtonCompanies" Style="{StaticResource SidebarButtonStyle}" Click="ShowPlaceholder_Click" Tag="Компании">
-                            <TextBlock Text="Компании"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Rectangle Width="18" Height="18" Fill="White">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/VWSR.Desktop;component/Assets/Icons/admin.png" Stretch="Uniform"/>
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                                <TextBlock Text="Компании" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Button>
                         <Button x:Name="MenuButtonUsers" Style="{StaticResource SidebarButtonStyle}" Click="ShowPlaceholder_Click" Tag="Пользователи">
-                            <TextBlock Text="Пользователи"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Rectangle Width="18" Height="18" Fill="White">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/VWSR.Desktop;component/Assets/Icons/user.png" Stretch="Uniform"/>
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                                <TextBlock Text="Пользователи" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Button>
                         <Button x:Name="MenuButtonModems" Style="{StaticResource SidebarButtonStyle}" Click="ShowPlaceholder_Click" Tag="Модемы">
-                            <TextBlock Text="Модемы"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Rectangle Width="18" Height="18" Fill="White">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/VWSR.Desktop;component/Assets/Icons/plug.png" Stretch="Uniform"/>
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                                <TextBlock Text="Модемы" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Button>
                         <Button x:Name="MenuButtonExtras" Style="{StaticResource SidebarButtonStyle}" Click="ShowPlaceholder_Click" Tag="Дополнительные">
-                            <TextBlock Text="Дополнительные"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Rectangle Width="18" Height="18" Fill="White">
+                                    <Rectangle.OpacityMask>
+                                        <ImageBrush ImageSource="/VWSR.Desktop;component/Assets/Icons/info-circle.png" Stretch="Uniform"/>
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                                <TextBlock Text="Дополнительные" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Button>
                     </StackPanel>
                 </StackPanel>

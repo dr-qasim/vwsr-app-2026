@@ -12,6 +12,20 @@ builder.Services
     .AddViewLocalization()
     .AddDataAnnotationsLocalization();
 
+// Нужен для доступа к HttpContext в layout (проверка авторизации).
+builder.Services.AddHttpContextAccessor();
+
+// Память для сессий (самый простой вариант).
+builder.Services.AddDistributedMemoryCache();
+
+// Простая сессия для хранения токена.
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(2);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
 // HTTP-клиент для обращения к нашему API.
 builder.Services.AddHttpClient("api", client =>
 {
@@ -52,6 +66,7 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseSession();
 app.UseAuthorization();
 
 app.MapStaticAssets();

@@ -70,7 +70,8 @@ public partial class AdminPage : Page
                     Name = item.Name,
                     Model = item.Model,
                     Company = item.Company ?? string.Empty,
-                    ModemId = item.ModemId,
+                    // По критериям: у отвязанного ТА модем должен быть -1.
+                    ModemId = item.ModemId <= 0 ? -1 : item.ModemId,
                     Address = item.Address,
                     Place = item.Place,
                     WorkingSince = item.WorkingSince

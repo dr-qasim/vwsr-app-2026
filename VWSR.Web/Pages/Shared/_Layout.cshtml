@@ -1,5 +1,10 @@
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<VWSR.Web.SharedResource> L
+@inject IHttpContextAccessor HttpAccessor
+@{
+    var isAuth = !string.IsNullOrWhiteSpace(HttpAccessor.HttpContext?.Session.GetString("AccessToken"));
+    var userName = HttpAccessor.HttpContext?.Session.GetString("UserName");
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -35,7 +40,17 @@
                     <div class="d-flex align-items-center">
                         <span class="me-2 text-muted">@L["Language"]:</span>
                         <a class="btn btn-sm btn-outline-secondary me-2" href="?culture=ru">RU</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="?culture=en">EN</a>
+                        <a class="btn btn-sm btn-outline-secondary me-3" href="?culture=en">EN</a>
+
+                        @if (isAuth)
+                        {
+                            <span class="me-2 text-muted">@userName</span>
+                            <a class="btn btn-sm btn-outline-danger" asp-page="/Logout">Выход</a>
+                        }
+                        else
+                        {
+                            <a class="btn btn-sm btn-primary" asp-page="/Login">Вход</a>
+                        }
                     </div>
                 </div>
             </div>

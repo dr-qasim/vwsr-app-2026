@@ -13,7 +13,7 @@
     <li>Опционально: SerialNumber</li>
 </ul>
 
-<form method="post" enctype="multipart/form-data">
+<form method="post" asp-antiforgery="true" enctype="multipart/form-data">
     <div class="mb-3">
         <input type="file" name="UploadFile" class="form-control" />
     </div>

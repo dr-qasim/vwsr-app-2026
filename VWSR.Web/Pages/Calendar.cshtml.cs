@@ -1,4 +1,5 @@
 using System.Linq;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace VWSR.Web.Pages;
@@ -8,8 +9,14 @@ public sealed class CalendarModel : PageModel
     public string? Filter { get; private set; }
     public List<CalendarItem> Items { get; } = new();
 
-    public void OnGet(string? type)
+    public IActionResult OnGet(string? type)
     {
+        // Без авторизации не показываем страницу.
+        if (!IsAuthorized())
+        {
+            return RedirectToPage("/Login");
+        }
+
         // Минимальная логика: имитируем данные, чтобы показать цветовую маркировку.
         Filter = type;
 
@@ -23,10 +30,12 @@ public sealed class CalendarModel : PageModel
         if (string.IsNullOrWhiteSpace(Filter))
         {
             Items.AddRange(data);
-            return;
+            return Page();
         }
 
         Items.AddRange(data.Where(i => i.FilterKey == Filter));
+
+        return Page();
     }
 
     public sealed class CalendarItem
@@ -53,5 +62,10 @@ public sealed class CalendarModel : PageModel
         public string CssClass { get; }
         public string Tooltip { get; }
         public string FilterKey { get; }
+    }
+
+    private bool IsAuthorized()
+    {
+        return !string.IsNullOrWhiteSpace(HttpContext.Session.GetString("AccessToken"));
     }
 }

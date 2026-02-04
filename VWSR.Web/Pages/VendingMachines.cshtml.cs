@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using ExcelDataReader;
@@ -13,10 +12,6 @@ namespace VWSR.Web.Pages;
 
 public sealed class VendingMachinesModel : PageModel
 {
-    // Кэш токена, чтобы не логиниться перед каждой строкой.
-    private static string? _cachedToken;
-    private static DateTime _tokenExpiresAt;
-
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly JsonSerializerOptions _jsonOptions;
@@ -41,8 +36,24 @@ public sealed class VendingMachinesModel : PageModel
     public int ErrorCount => Errors.Count;
     public List<RowError> Errors { get; } = new();
 
-    public async Task OnPostAsync()
+    public IActionResult OnGet()
     {
+        // Простая проверка авторизации.
+        if (!IsAuthorized())
+        {
+            return RedirectToPage("/Login");
+        }
+
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostAsync()
+    {
+        if (!IsAuthorized())
+        {
+            return RedirectToPage("/Login");
+        }
+
         // Основная логика импорта после загрузки файла.
         Errors.Clear();
         Message = null;
@@ -52,14 +63,14 @@ public sealed class VendingMachinesModel : PageModel
         if (UploadFile == null || UploadFile.Length == 0)
         {
             Message = "Файл не выбран.";
-            return;
+            return Page();
         }
 
         var ext = Path.GetExtension(UploadFile.FileName).ToLowerInvariant();
         if (ext != ".csv" && ext != ".xlsx")
         {
             Message = "Нужен файл CSV или XLSX.";
-            return;
+            return Page();
         }
 
         // Читаем файл в список строк (словарь: колонка -> значение).
@@ -70,7 +81,7 @@ public sealed class VendingMachinesModel : PageModel
         if (rows.Count <= 1)
         {
             Message = "Файл пустой или неверный формат.";
-            return;
+            return Page();
         }
 
         TotalCount = rows.Count - 1;
@@ -93,7 +104,7 @@ public sealed class VendingMachinesModel : PageModel
             if (!columnMap.ContainsKey(col))
             {
                 Message = $"Нет обязательной колонки: {col}";
-                return;
+                return Page();
             }
         }
 
@@ -128,108 +139,89 @@ public sealed class VendingMachinesModel : PageModel
         Message = Errors.Count == 0
             ? "Импорт завершен без ошибок."
             : "Импорт выполнен частично. Смотрите ошибки ниже.";
+
+        return Page();
     }
 
     private async Task<CreateResult> TryCreateMachineAsync(Dictionary<string, string> row, Dictionary<string, int> map)
     {
-        var client = _httpClientFactory.CreateClient("api");
-        var token = await GetTokenAsync(client);
-        if (string.IsNullOrWhiteSpace(token))
+        try
         {
-            return CreateResult.Fail("Не удалось получить токен API.");
+            var client = _httpClientFactory.CreateClient("api");
+            var token = GetTokenFromSession();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return CreateResult.Fail("Не удалось получить токен API.");
+            }
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            // Берем обязательные значения из файла.
+            var name = GetValue(row, map, "Name");
+            var modelId = int.Parse(GetValue(row, map, "ModelId"), CultureInfo.InvariantCulture);
+            var companyId = int.Parse(GetValue(row, map, "CompanyId"), CultureInfo.InvariantCulture);
+            var address = GetValue(row, map, "Address");
+            var place = GetValue(row, map, "Place");
+            var inventoryNumber = GetValue(row, map, "InventoryNumber");
+            var serialNumber = TryGetValue(row, map, "SerialNumber") ?? $"SN-{Guid.NewGuid():N}".Substring(0, 10);
+
+            // Остальные поля - простые дефолты (чтобы новичок не писал много кода).
+            var defaults = _configuration.GetSection("Api:Defaults");
+            var request = new VendingMachineCreateRequest
+            {
+                Name = name,
+                VendingMachineModelId = modelId,
+                WorkModeId = defaults.GetValue("WorkModeId", 1),
+                TimeZoneId = defaults.GetValue("TimeZoneId", 1),
+                VendingMachineStatusId = defaults.GetValue("VendingMachineStatusId", 1),
+                ServicePriorityId = defaults.GetValue("ServicePriorityId", 1),
+                ProductMatrixId = defaults.GetValue("ProductMatrixId", 1),
+                CompanyId = companyId,
+                ModemId = null,
+                Address = address,
+                Place = place,
+                InventoryNumber = inventoryNumber,
+                SerialNumber = serialNumber,
+                ManufactureDate = DateOnly.FromDateTime(DateTime.Today),
+                CommissioningDate = DateOnly.FromDateTime(DateTime.Today),
+                LastVerificationDate = null,
+                VerificationIntervalMonths = null,
+                ResourceHours = null,
+                NextServiceDate = null,
+                ServiceDurationHours = null,
+                InventoryDate = null,
+                CountryId = defaults.GetValue("CountryId", 1),
+                LastVerificationUserAccountId = null,
+                Notes = null
+            };
+
+            var response = await client.PostAsJsonAsync("api/vending-machines", request, _jsonOptions);
+            if (response.IsSuccessStatusCode)
+            {
+                return CreateResult.Ok();
+            }
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                return CreateResult.Fail("Дубликат в БД (серийный или инвентарный номер).");
+            }
+
+            return CreateResult.Fail("Ошибка при сохранении в БД (API).");
         }
-
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-        // Берем обязательные значения из файла.
-        var name = GetValue(row, map, "Name");
-        var modelId = int.Parse(GetValue(row, map, "ModelId"), CultureInfo.InvariantCulture);
-        var companyId = int.Parse(GetValue(row, map, "CompanyId"), CultureInfo.InvariantCulture);
-        var address = GetValue(row, map, "Address");
-        var place = GetValue(row, map, "Place");
-        var inventoryNumber = GetValue(row, map, "InventoryNumber");
-        var serialNumber = TryGetValue(row, map, "SerialNumber") ?? $"SN-{Guid.NewGuid():N}".Substring(0, 10);
-
-        // Остальные поля - простые дефолты (чтобы новичок не писал много кода).
-        var defaults = _configuration.GetSection("Api:Defaults");
-        var request = new VendingMachineCreateRequest
+        catch
         {
-            Name = name,
-            VendingMachineModelId = modelId,
-            WorkModeId = defaults.GetValue("WorkModeId", 1),
-            TimeZoneId = defaults.GetValue("TimeZoneId", 1),
-            VendingMachineStatusId = defaults.GetValue("VendingMachineStatusId", 1),
-            ServicePriorityId = defaults.GetValue("ServicePriorityId", 1),
-            ProductMatrixId = defaults.GetValue("ProductMatrixId", 1),
-            CompanyId = companyId,
-            ModemId = null,
-            Address = address,
-            Place = place,
-            InventoryNumber = inventoryNumber,
-            SerialNumber = serialNumber,
-            ManufactureDate = DateOnly.FromDateTime(DateTime.Today),
-            CommissioningDate = DateOnly.FromDateTime(DateTime.Today),
-            LastVerificationDate = null,
-            VerificationIntervalMonths = null,
-            ResourceHours = null,
-            NextServiceDate = null,
-            ServiceDurationHours = null,
-            InventoryDate = null,
-            CountryId = defaults.GetValue("CountryId", 1),
-            LastVerificationUserAccountId = null,
-            Notes = null
-        };
-
-        var response = await client.PostAsJsonAsync("api/vending-machines", request, _jsonOptions);
-        if (response.IsSuccessStatusCode)
-        {
-            return CreateResult.Ok();
+            return CreateResult.Fail("Сервер API недоступен.");
         }
-
-        if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
-        {
-            return CreateResult.Fail("Дубликат в БД (серийный или инвентарный номер).");
-        }
-
-        return CreateResult.Fail("Ошибка при сохранении в БД (API).");
     }
 
-    private async Task<string?> GetTokenAsync(HttpClient client)
+    private bool IsAuthorized()
     {
-        // Если токен еще живой - используем его.
-        if (!string.IsNullOrWhiteSpace(_cachedToken) && _tokenExpiresAt > DateTime.UtcNow.AddMinutes(1))
-        {
-            return _cachedToken;
-        }
+        return !string.IsNullOrWhiteSpace(GetTokenFromSession());
+    }
 
-        var email = _configuration["Api:UserEmail"];
-        var password = _configuration["Api:UserPassword"];
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-        {
-            return null;
-        }
-
-        // Авторизация в API для получения JWT.
-        var response = await client.PostAsJsonAsync("api/auth/login", new { email, password });
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        var body = await response.Content.ReadAsStringAsync();
-        var login = JsonSerializer.Deserialize<LoginResponse>(body, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
-
-        if (login == null)
-        {
-            return null;
-        }
-
-        _cachedToken = login.AccessToken;
-        _tokenExpiresAt = DateTime.UtcNow.AddMinutes(20);
-        return _cachedToken;
+    private string? GetTokenFromSession()
+    {
+        return HttpContext.Session.GetString("AccessToken");
     }
 
     private static string? ValidateRow(
@@ -412,11 +404,6 @@ public sealed class VendingMachinesModel : PageModel
     {
         // Простая разбивка без сложных кавычек (достаточно для требований).
         return line.Split(delimiter).Select(v => v.Trim()).ToList();
-    }
-
-    private sealed class LoginResponse
-    {
-        public string AccessToken { get; set; } = string.Empty;
     }
 
     private sealed record CreateResult(bool Success, string? ErrorMessage)

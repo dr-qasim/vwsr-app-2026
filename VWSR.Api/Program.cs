@@ -637,10 +637,269 @@ monitoringGroup.MapGet("/machines", async (
     return Results.Ok(result);
 });
 
+var mobileGroup = app.MapGroup("/api/mobile").RequireAuthorization();
+
+mobileGroup.MapGet("/requests", async (AppDbContext db, ClaimsPrincipal user) =>
+{
+    var userId = GetCurrentUserId(user);
+    if (!userId.HasValue)
+    {
+        return Results.Unauthorized();
+    }
+
+    var requests = await db.ServiceRequest
+        .AsNoTracking()
+        .Include(r => r.ServiceRequestStatus)
+        .Include(r => r.ServiceRequestType)
+        .Include(r => r.VendingMachine)
+        .Where(r => r.AssignedUserAccountId == userId.Value || r.AssignedUserAccountId == null)
+        .OrderBy(r => r.PlannedDate)
+        .ThenBy(r => r.ServiceRequestId)
+        .Select(r => new MobileRequestCard(
+            r.ServiceRequestId,
+            $"SR-{r.ServiceRequestId}",
+            r.VendingMachine.Name,
+            r.ServiceRequestType.Name,
+            r.ServiceRequestStatus.Name,
+            r.PlannedDate,
+            r.VendingMachine.Address))
+        .ToListAsync();
+
+    // Если нет назначенных/свободных нарядов, показываем общий список.
+    if (requests.Count == 0)
+    {
+        requests = await db.ServiceRequest
+            .AsNoTracking()
+            .Include(r => r.ServiceRequestStatus)
+            .Include(r => r.ServiceRequestType)
+            .Include(r => r.VendingMachine)
+            .OrderBy(r => r.PlannedDate)
+            .ThenBy(r => r.ServiceRequestId)
+            .Take(30)
+            .Select(r => new MobileRequestCard(
+                r.ServiceRequestId,
+                $"SR-{r.ServiceRequestId}",
+                r.VendingMachine.Name,
+                r.ServiceRequestType.Name,
+                r.ServiceRequestStatus.Name,
+                r.PlannedDate,
+                r.VendingMachine.Address))
+            .ToListAsync();
+    }
+
+    return Results.Ok(requests);
+});
+
+mobileGroup.MapGet("/requests/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal user) =>
+{
+    var userId = GetCurrentUserId(user);
+    if (!userId.HasValue)
+    {
+        return Results.Unauthorized();
+    }
+
+    var request = await db.ServiceRequest
+        .AsNoTracking()
+        .Include(r => r.ServiceRequestStatus)
+        .Include(r => r.ServiceRequestType)
+        .Include(r => r.VendingMachine)
+        .FirstOrDefaultAsync(r => r.ServiceRequestId == id);
+
+    if (request is null)
+    {
+        return Results.NotFound();
+    }
+
+    if (request.AssignedUserAccountId.HasValue && request.AssignedUserAccountId.Value != userId.Value)
+    {
+        return Results.Forbid();
+    }
+
+    return Results.Ok(new MobileRequestDetail(
+        request.ServiceRequestId,
+        $"SR-{request.ServiceRequestId}",
+        request.ServiceRequestStatus.Name,
+        request.ServiceRequestType.Name,
+        request.PlannedDate,
+        request.Notes,
+        request.DeclineReason,
+        request.VendingMachine.Name,
+        request.VendingMachine.Address,
+        request.VendingMachine.Place,
+        request.VendingMachine.SerialNumber,
+        request.VendingMachine.InventoryNumber));
+});
+
+mobileGroup.MapGet("/requests/{id:int}/history", async (int id, AppDbContext db, ClaimsPrincipal user) =>
+{
+    var userId = GetCurrentUserId(user);
+    if (!userId.HasValue)
+    {
+        return Results.Unauthorized();
+    }
+
+    var request = await db.ServiceRequest
+        .AsNoTracking()
+        .Include(r => r.ServiceRequestStatus)
+        .FirstOrDefaultAsync(r => r.ServiceRequestId == id);
+
+    if (request is null)
+    {
+        return Results.NotFound();
+    }
+
+    if (request.AssignedUserAccountId.HasValue && request.AssignedUserAccountId.Value != userId.Value)
+    {
+        return Results.Forbid();
+    }
+
+    var historyRows = await db.ServiceRequestStatusHistory
+        .AsNoTracking()
+        .Include(h => h.ServiceRequestStatus)
+        .Include(h => h.ChangedByUserAccount)
+        .Where(h => h.ServiceRequestId == id)
+        .OrderByDescending(h => h.ChangedAt)
+        .Select(h => new
+        {
+            Status = h.ServiceRequestStatus.Name,
+            h.ChangedAt,
+            h.ChangedByUserAccount
+        })
+        .ToListAsync();
+
+    var history = historyRows
+        .Select(row => new MobileStatusHistoryItem(
+            row.Status,
+            row.ChangedAt,
+            BuildFullName(row.ChangedByUserAccount)))
+        .ToList();
+
+    if (history.Count == 0)
+    {
+        history.Add(new MobileStatusHistoryItem(
+            request.ServiceRequestStatus.Name,
+            request.CreatedAt,
+            null));
+    }
+
+    return Results.Ok(history);
+});
+
+mobileGroup.MapPost("/requests/{id:int}/accept", async (int id, AppDbContext db, ClaimsPrincipal user) =>
+{
+    var userId = GetCurrentUserId(user);
+    if (!userId.HasValue)
+    {
+        return Results.Unauthorized();
+    }
+
+    var request = await db.ServiceRequest.FirstOrDefaultAsync(r => r.ServiceRequestId == id);
+    if (request is null)
+    {
+        return Results.NotFound();
+    }
+
+    if (request.AssignedUserAccountId.HasValue && request.AssignedUserAccountId.Value != userId.Value)
+    {
+        return Results.Forbid();
+    }
+
+    var workStatusId = await GetServiceRequestStatusId(db, "В работе");
+    if (!workStatusId.HasValue)
+    {
+        return Results.BadRequest(new { message = "Не найден статус 'В работе'." });
+    }
+
+    request.ServiceRequestStatusId = workStatusId.Value;
+    request.AssignedUserAccountId = userId.Value;
+    request.DeclineReason = null;
+
+    db.ServiceRequestStatusHistory.Add(new ServiceRequestStatusHistory
+    {
+        ServiceRequestId = request.ServiceRequestId,
+        ServiceRequestStatusId = workStatusId.Value,
+        ChangedByUserAccountId = userId.Value,
+        ChangedAt = DateTime.UtcNow
+    });
+
+    await db.SaveChangesAsync();
+    return Results.Ok(new { message = "Наряд принят." });
+});
+
+mobileGroup.MapPost("/requests/{id:int}/decline", async (
+    int id,
+    MobileDeclineRequest body,
+    AppDbContext db,
+    ClaimsPrincipal user) =>
+{
+    var userId = GetCurrentUserId(user);
+    if (!userId.HasValue)
+    {
+        return Results.Unauthorized();
+    }
+
+    if (string.IsNullOrWhiteSpace(body.Reason))
+    {
+        return Results.BadRequest(new { message = "Укажите причину отказа." });
+    }
+
+    var request = await db.ServiceRequest.FirstOrDefaultAsync(r => r.ServiceRequestId == id);
+    if (request is null)
+    {
+        return Results.NotFound();
+    }
+
+    if (request.AssignedUserAccountId.HasValue && request.AssignedUserAccountId.Value != userId.Value)
+    {
+        return Results.Forbid();
+    }
+
+    var cancelledStatusId = await GetServiceRequestStatusId(db, "Отменена");
+    if (!cancelledStatusId.HasValue)
+    {
+        return Results.BadRequest(new { message = "Не найден статус 'Отменена'." });
+    }
+
+    request.ServiceRequestStatusId = cancelledStatusId.Value;
+    request.AssignedUserAccountId = userId.Value;
+    request.DeclineReason = body.Reason.Trim();
+
+    db.ServiceRequestStatusHistory.Add(new ServiceRequestStatusHistory
+    {
+        ServiceRequestId = request.ServiceRequestId,
+        ServiceRequestStatusId = cancelledStatusId.Value,
+        ChangedByUserAccountId = userId.Value,
+        ChangedAt = DateTime.UtcNow
+    });
+
+    await db.SaveChangesAsync();
+    return Results.Ok(new { message = "Наряд отклонен." });
+});
+
 app.Run();
 
-static string BuildFullName(UserAccount user)
+static string BuildFullName(UserAccount? user)
 {
+    if (user is null)
+    {
+        return string.Empty;
+    }
+
     var parts = new[] { user.LastName, user.FirstName, user.Patronymic };
     return string.Join(" ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+}
+
+static int? GetCurrentUserId(ClaimsPrincipal user)
+{
+    var idValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    return int.TryParse(idValue, out var userId) ? userId : null;
+}
+
+static async Task<int?> GetServiceRequestStatusId(AppDbContext db, string statusName)
+{
+    return await db.ServiceRequestStatus
+        .AsNoTracking()
+        .Where(s => s.Name == statusName)
+        .Select(s => (int?)s.ServiceRequestStatusId)
+        .FirstOrDefaultAsync();
 }

@@ -1,7 +1,7 @@
 namespace VWSR.Api.Contracts;
 
 public sealed record MonitoringMachineItem(
-    int Id,
+    Guid Id,
     string Name,
     string Provider,
     string Status,

@@ -243,6 +243,7 @@ USING (VALUES
 
     INSERT INTO dbo.VendingMachine
     (
+        ExternalId,
         Name,
         VendingMachineModelId,
         WorkModeId,
@@ -272,6 +273,7 @@ USING (VALUES
         Notes
     )
     SELECT
+        i.ExternalId,
         i.Name,
         model.VendingMachineModelId,
         wm.WorkModeId,
@@ -317,12 +319,19 @@ USING (VALUES
     LEFT JOIN dbo.VendingMachine existing ON existing.SerialNumber = i.SerialNumber
     WHERE existing.VendingMachineId IS NULL;
 
+    -- Если ТА уже существует в БД (по SerialNumber), обновляем внешний GUID из ресурсов.
+    UPDATE vm
+    SET vm.ExternalId = i.ExternalId
+    FROM dbo.VendingMachine vm
+    INNER JOIN #VendingMachineImport i ON i.SerialNumber = vm.SerialNumber
+    WHERE vm.ExternalId <> i.ExternalId;
+
     IF OBJECT_ID(N'tempdb..#VendingMachineMap') IS NOT NULL DROP TABLE #VendingMachineMap;
     CREATE TABLE #VendingMachineMap (ExternalId uniqueidentifier NOT NULL PRIMARY KEY, VendingMachineId int NOT NULL);
     INSERT INTO #VendingMachineMap (ExternalId, VendingMachineId)
     SELECT i.ExternalId, vm.VendingMachineId
     FROM #VendingMachineImport i
-    INNER JOIN dbo.VendingMachine vm ON vm.SerialNumber = i.SerialNumber;
+    INNER JOIN dbo.VendingMachine vm ON vm.ExternalId = i.ExternalId;
 
     /* ===== Import vending machine payment systems ===== */
     IF OBJECT_ID(N'tempdb..#VendingMachinePaymentImport') IS NOT NULL DROP TABLE #VendingMachinePaymentImport;

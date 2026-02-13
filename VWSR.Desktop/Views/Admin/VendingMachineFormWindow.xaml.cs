@@ -180,7 +180,7 @@ public partial class VendingMachineFormWindow : Window
         }
     }
 
-    private async Task UpdateMachine(int id, VendingMachineCreateRequest request)
+    private async Task UpdateMachine(Guid id, VendingMachineCreateRequest request)
     {
         var update = new VendingMachineUpdateRequest(
             request.Name,

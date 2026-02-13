@@ -7,6 +7,8 @@ public partial class VendingMachine
 {
     public int VendingMachineId { get; set; }
 
+    public Guid ExternalId { get; set; }
+
     public string Name { get; set; } = null!;
 
     public int VendingMachineModelId { get; set; }

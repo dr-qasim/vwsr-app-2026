@@ -424,6 +424,8 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<VendingMachine>(entity =>
         {
+            entity.HasIndex(e => e.ExternalId, "UQ_VendingMachine_ExternalId").IsUnique();
+
             entity.HasIndex(e => e.InventoryNumber, "UQ_VendingMachine_InventoryNumber").IsUnique();
 
             entity.HasIndex(e => e.SerialNumber, "UQ_VendingMachine_SerialNumber").IsUnique();
@@ -432,6 +434,8 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())", "DF_VendingMachine_CreatedAt");
+            entity.Property(e => e.ExternalId)
+                .HasDefaultValueSql("(newsequentialid())", "DF_VendingMachine_ExternalId");
             entity.Property(e => e.InventoryNumber).HasMaxLength(50);
             entity.Property(e => e.KitOnlineCashRegisterId).HasMaxLength(50);
             entity.Property(e => e.Latitude).HasColumnType("decimal(9, 6)");

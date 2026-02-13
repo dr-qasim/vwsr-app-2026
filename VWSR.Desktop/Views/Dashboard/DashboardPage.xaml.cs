@@ -24,7 +24,6 @@ public partial class DashboardPage : Page
     public DashboardPage()
     {
         InitializeComponent();
-        InitDashboard();
         DataContext = this;
         _ = LoadDashboard();
     }
@@ -102,7 +101,9 @@ public partial class DashboardPage : Page
         catch
         {
             // Если API недоступно, остаемся на нулевых данных.
+            InitDashboard();
         }
+
     }
 
     private void ApplyDashboardData(DashboardResponse data)
@@ -244,7 +245,7 @@ public partial class DashboardPage : Page
         }
     }
 
-    private sealed class SalesPoint
+        private sealed class SalesPoint
     {
         public string Day { get; init; } = string.Empty;
         public decimal Sum { get; init; }

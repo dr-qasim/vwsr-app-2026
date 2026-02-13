@@ -267,7 +267,7 @@ public partial class AdminPage : Page
         return (sender as FrameworkElement)?.DataContext as VendingMachineRow;
     }
 
-    private async Task<VendingMachineDetail?> LoadDetail(int id)
+    private async Task<VendingMachineDetail?> LoadDetail(Guid id)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, Session.GetApiUrl($"api/vending-machines/{id}"));
         ApplyAuth(request);

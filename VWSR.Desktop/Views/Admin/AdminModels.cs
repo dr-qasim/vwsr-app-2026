@@ -5,7 +5,7 @@ namespace VWSR.Desktop;
 public sealed record PagedResult<T>(int Total, int Page, int PageSize, T[] Items);
 
 public sealed record VendingMachineListItem(
-    int Id,
+    Guid Id,
     string Name,
     string Model,
     string? Company,
@@ -16,7 +16,7 @@ public sealed record VendingMachineListItem(
 );
 
 public sealed record VendingMachineDetail(
-    int Id,
+    Guid Id,
     string Name,
     int VendingMachineModelId,
     int WorkModeId,
@@ -99,7 +99,7 @@ public sealed record VendingMachineUpdateRequest(
 
 public sealed class VendingMachineRow
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;
     public string Company { get; set; } = string.Empty;

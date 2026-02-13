@@ -389,6 +389,9 @@ BEGIN
     CREATE TABLE dbo.VendingMachine
     (
         VendingMachineId int IDENTITY(1,1) NOT NULL CONSTRAINT PK_VendingMachine PRIMARY KEY,
+        -- В импортных ресурсах ID торгового автомата задан как GUID.
+        -- Чтобы не ломать все связи (FK) в БД, храним GUID отдельно как "внешний" идентификатор.
+        ExternalId uniqueidentifier NOT NULL CONSTRAINT DF_VendingMachine_ExternalId DEFAULT (newsequentialid()),
         Name nvarchar(200) NOT NULL,
 
         VendingMachineModelId int NOT NULL,
@@ -490,6 +493,7 @@ BEGIN
             REFERENCES dbo.UserAccount(UserAccountId),
 
         /* Uniqueness */
+        CONSTRAINT UQ_VendingMachine_ExternalId UNIQUE (ExternalId),
         CONSTRAINT UQ_VendingMachine_InventoryNumber UNIQUE (InventoryNumber),
         CONSTRAINT UQ_VendingMachine_SerialNumber UNIQUE (SerialNumber),
 
@@ -554,6 +558,63 @@ BEGIN
             OR (Longitude BETWEEN -180 AND 180)
         )
     );
+END
+GO
+
+/* =========================
+   Schema upgrades (safe re-run)
+   ========================= */
+
+-- Добавляем внешний GUID для торгового автомата, если таблица уже существует (например, БД создана ранее).
+IF OBJECT_ID(N'dbo.VendingMachine', N'U') IS NOT NULL AND COL_LENGTH('dbo.VendingMachine', 'ExternalId') IS NULL
+BEGIN
+    ALTER TABLE dbo.VendingMachine ADD ExternalId uniqueidentifier NULL;
+END
+GO
+
+-- Важно: делаем отдельными batch, чтобы SQL Server корректно "увидел" новый столбец.
+IF OBJECT_ID(N'dbo.VendingMachine', N'U') IS NOT NULL AND COL_LENGTH('dbo.VendingMachine', 'ExternalId') IS NOT NULL
+BEGIN
+    UPDATE dbo.VendingMachine
+    SET ExternalId = NEWID()
+    WHERE ExternalId IS NULL;
+END
+GO
+
+IF OBJECT_ID(N'dbo.VendingMachine', N'U') IS NOT NULL
+   AND EXISTS
+   (
+       SELECT 1
+       FROM sys.columns
+       WHERE object_id = OBJECT_ID(N'dbo.VendingMachine')
+         AND name = N'ExternalId'
+         AND is_nullable = 1
+   )
+BEGIN
+    ALTER TABLE dbo.VendingMachine ALTER COLUMN ExternalId uniqueidentifier NOT NULL;
+END
+GO
+
+IF OBJECT_ID(N'dbo.VendingMachine', N'U') IS NOT NULL
+   AND OBJECT_ID(N'DF_VendingMachine_ExternalId', N'D') IS NULL
+BEGIN
+    ALTER TABLE dbo.VendingMachine
+        ADD CONSTRAINT DF_VendingMachine_ExternalId DEFAULT (NEWID()) FOR ExternalId;
+END
+GO
+
+IF OBJECT_ID(N'dbo.VendingMachine', N'U') IS NOT NULL
+   AND NOT EXISTS
+   (
+       SELECT 1
+       FROM sys.key_constraints
+       WHERE [type] = 'UQ'
+         AND parent_object_id = OBJECT_ID(N'dbo.VendingMachine')
+         AND name = N'UQ_VendingMachine_ExternalId'
+   )
+BEGIN
+    ALTER TABLE dbo.VendingMachine
+        ADD CONSTRAINT UQ_VendingMachine_ExternalId UNIQUE (ExternalId);
 END
 GO
 

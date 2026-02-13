@@ -3,7 +3,7 @@ namespace VWSR.Api.Contracts;
 public sealed record PagedResult<T>(int Total, int Page, int PageSize, IReadOnlyList<T> Items);
 
 public sealed record VendingMachineListItem(
-    int Id,
+    Guid Id,
     string Name,
     string Model,
     string? Company,
@@ -14,7 +14,7 @@ public sealed record VendingMachineListItem(
 );
 
 public sealed record VendingMachineDetail(
-    int Id,
+    Guid Id,
     string Name,
     int VendingMachineModelId,
     int WorkModeId,

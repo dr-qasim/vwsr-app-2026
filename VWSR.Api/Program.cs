@@ -166,7 +166,7 @@ vmGroup.MapGet("/", async (
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
         .Select(vm => new VendingMachineListItem(
-            vm.VendingMachineId,
+            vm.ExternalId,
             vm.Name,
             vm.VendingMachineModel.Name,
             vm.Company != null ? vm.Company.Name : null,
@@ -179,9 +179,9 @@ vmGroup.MapGet("/", async (
     return Results.Ok(new PagedResult<VendingMachineListItem>(total, page, pageSize, items));
 });
 
-vmGroup.MapGet("/{id:int}", async (int id, AppDbContext db) =>
+vmGroup.MapGet("/{id:guid}", async (Guid id, AppDbContext db) =>
 {
-    var vm = await db.VendingMachine.AsNoTracking().FirstOrDefaultAsync(v => v.VendingMachineId == id);
+    var vm = await db.VendingMachine.AsNoTracking().FirstOrDefaultAsync(v => v.ExternalId == id);
 
     if (vm is null)
     {
@@ -189,7 +189,7 @@ vmGroup.MapGet("/{id:int}", async (int id, AppDbContext db) =>
     }
 
     return Results.Ok(new VendingMachineDetail(
-        vm.VendingMachineId,
+        vm.ExternalId,
         vm.Name,
         vm.VendingMachineModelId,
         vm.WorkModeId,
@@ -230,6 +230,8 @@ vmGroup.MapPost("/", async (VendingMachineCreateRequest request, AppDbContext db
 
     var vm = new VendingMachine
     {
+        // Внешний идентификатор (GUID). В UI/API будем показывать его как "Id".
+        ExternalId = Guid.NewGuid(),
         Name = request.Name,
         VendingMachineModelId = request.VendingMachineModelId,
         WorkModeId = request.WorkModeId,
@@ -260,24 +262,25 @@ vmGroup.MapPost("/", async (VendingMachineCreateRequest request, AppDbContext db
     db.VendingMachine.Add(vm);
     await db.SaveChangesAsync();
 
-    return Results.Created($"/api/vending-machines/{vm.VendingMachineId}", new { id = vm.VendingMachineId });
+    return Results.Created($"/api/vending-machines/{vm.ExternalId}", new { id = vm.ExternalId });
 });
 
-vmGroup.MapPut("/{id:int}", async (int id, VendingMachineUpdateRequest request, AppDbContext db) =>
+vmGroup.MapPut("/{id:guid}", async (Guid id, VendingMachineUpdateRequest request, AppDbContext db) =>
 {
-    var vm = await db.VendingMachine.FirstOrDefaultAsync(v => v.VendingMachineId == id);
+    var vm = await db.VendingMachine.FirstOrDefaultAsync(v => v.ExternalId == id);
 
     if (vm is null)
     {
         return Results.NotFound();
     }
 
-    if (await db.VendingMachine.AnyAsync(v => v.SerialNumber == request.SerialNumber && v.VendingMachineId != id))
+    // Проверяем уникальность по внутреннему int-id, т.к. route теперь GUID.
+    if (await db.VendingMachine.AnyAsync(v => v.SerialNumber == request.SerialNumber && v.VendingMachineId != vm.VendingMachineId))
     {
         return Results.Conflict(new { message = "TA с такми номером уже существует." });
     }
 
-    if (await db.VendingMachine.AnyAsync(v => v.InventoryNumber == request.InventoryNumber && v.VendingMachineId != id))
+    if (await db.VendingMachine.AnyAsync(v => v.InventoryNumber == request.InventoryNumber && v.VendingMachineId != vm.VendingMachineId))
     {
         return Results.Conflict(new { message = "TA с такми инвентарным номером уже существует." });
     }
@@ -311,9 +314,9 @@ vmGroup.MapPut("/{id:int}", async (int id, VendingMachineUpdateRequest request, 
     return Results.Ok();
 });
 
-vmGroup.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
+vmGroup.MapDelete("/{id:guid}", async (Guid id, AppDbContext db) =>
 {
-    var vm = await db.VendingMachine.FirstOrDefaultAsync(v => v.VendingMachineId == id);
+    var vm = await db.VendingMachine.FirstOrDefaultAsync(v => v.ExternalId == id);
 
     if (vm is null)
     {
@@ -326,9 +329,9 @@ vmGroup.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
     return Results.Ok();
 });
 
-vmGroup.MapPost("/{id:int}/unlink-modem", async (int id, AppDbContext db) =>
+vmGroup.MapPost("/{id:guid}/unlink-modem", async (Guid id, AppDbContext db) =>
 {
-    var vm = await db.VendingMachine.FirstOrDefaultAsync(v => v.VendingMachineId == id);
+    var vm = await db.VendingMachine.FirstOrDefaultAsync(v => v.ExternalId == id);
 
     if (vm is null)
     {
@@ -619,7 +622,7 @@ monitoringGroup.MapGet("/machines", async (
         incomeByMachine.TryGetValue(vm.VendingMachineId, out var income);
 
         result.Add(new MonitoringMachineItem(
-            vm.VendingMachineId,
+            vm.ExternalId,
             vm.Name,
             vm.Modem?.Provider?.Name ?? "-",
             vm.VendingMachineStatus.Name,

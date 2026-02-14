@@ -10,8 +10,22 @@ using VWSR.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Минимальная настройка Swagger/OpenAPI.
+builder.Services.AddEndpointsApiExplorer();
+
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
+    // Примеры для удаленного SQL Server в локальной сети:
+    // 1) SQL-авторизация (логин/пароль SQL):
+    // Server=192.168.1.10,1433;Database=VendingService;User Id=sa;Password=YourStrongPass123!;Encrypt=False;TrustServerCertificate=True
+    //
+    // 2) Windows-аутентификация (если права домена/сети настроены):
+    // Server=192.168.1.10,1433;Database=VendingService;Trusted_Connection=True;Encrypt=False;TrustServerCertificate=True
+    //
+    // Если используется именованный экземпляр:
+    // Server=192.168.1.10\\SQLEXPRESS;Database=VendingService;User Id=sa;Password=YourStrongPass123!;Encrypt=False;TrustServerCertificate=True
+    
     var connectionString = builder.Configuration.GetConnectionString("Default");
     options.UseSqlServer(connectionString);
 });
@@ -50,6 +64,9 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+// Swagger включаем в режиме разработки.
+
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -95,6 +95,7 @@ public partial class AppDbContext : DbContext
     {
         if (!optionsBuilder.IsConfigured)
         {
+            // Подключение берется из appsettings*.json -> ConnectionStrings:Default.
             optionsBuilder.UseSqlServer("Name=ConnectionStrings:Default");
         }
     }
